@@ -9,18 +9,30 @@ def get_students_list(students_html):
 		if line[:6] == '  <li>' and '/people/' in line:
 			student = {}
 			student['name'] = line.split('page for ')[1].split('"')[0]
-			print(student['name'])
+			student['url'] = line.split('/people/')[1].split('"')[0]
 			students.append(student)
+	return students
 
 # Lazy html parser to get the office number
-def get_office_number(html_str):
-	pass
+def get_office_number(student_html):
+	for line in student_html.split('\n'):
+		if 'Office:' in line:
+			office_num = int(line.split('<dd>')[1].split('</dd>')[0])
+			return office_num
 
 students_html = requests.get(students_url)
 students_list = get_students_list(students_html.text)
-exit()
 
 for student in students_list:
-	office_num = get_office_number(student['url'])
-	student['office'] = office_num
-	print(student['name'], student['program'], student['office'])
+	student_url = 'http://www.cs.technion.ac.il/people/' + student['url']
+	student_html = requests.get(student_url)
+	office_num = get_office_number(student_html.text)
+	if office_num:
+		student['office'] = office_num
+	else:
+		student['office'] = 0
+
+students_list.sort(key = lambda s: s['office'])
+for student in students_list:
+	if student['office']:
+		print(student['office'], student['name'])
